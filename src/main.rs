@@ -1,3 +1,5 @@
+//! Just a demo for argh.
+
 use argh::FromArgs;
 
 #[derive(FromArgs)]
