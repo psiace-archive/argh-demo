@@ -2,6 +2,8 @@
 
 use argh::FromArgs;
 
+mod commands;
+
 #[derive(FromArgs)]
 /// A simple calculation tool
 struct DemoCli {
@@ -12,31 +14,18 @@ struct DemoCli {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 enum SubCommands {
-    Add(AddOptions),
-}
-
-#[derive(FromArgs, PartialEq, Debug)]
-/// Add two numbers
-#[argh(subcommand, name = "add")]
-pub struct AddOptions {
-    /// the first number.
-    #[argh(option)]
-    num1: u16,
-
-    /// the second number
-    #[argh(option)]
-    num2: u16,
+    Add(commands::add::AddOptions),
+    Sub(commands::sub::SubOptions),
 }
 
 fn main() {
     let cli: DemoCli = argh::from_env();
     match cli.subcommand {
         SubCommands::Add(options) => {
-            add(options.num1, options.num2);
+            commands::add::execute(options);
+        }
+        SubCommands::Sub(options) => {
+            commands::sub::execute(options);
         }
     };
-}
-
-fn add(num1: u16, num2: u16) {
-    println!("{} + {} = {}", num1, num2, num1 + num2);
 }
