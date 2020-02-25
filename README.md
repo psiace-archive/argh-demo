@@ -158,7 +158,7 @@ Continue to use `1 + 2 = 3` to try, `target / debug / argh-demo --num1 1 --num2 
 1 + 2 = 3
 ```
 
-### Better Structure
+## Better Structure
 
 If our program has a lot of options / subcommands to organize, it seems messy to put in a single file.
 Imagine how programs like `cargo` do this. They have separate files for each subcommand in the `commands` folder.
