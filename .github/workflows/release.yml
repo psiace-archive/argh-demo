@@ -1,3 +1,5 @@
+name: Auto Release
+
 on:
   push:
     # Sequence of patterns matched against refs/tags
@@ -27,9 +29,9 @@ jobs:
           args: -- ${{ secrets.CARGO_TOKEN }}
 
       - name: Cargo publish
-        uses: seunlanlege/cargo-auto-publish@2
+        uses: actions-rs/cargo@v1
         with:
-          toml: ./Cargo.toml
+          command: publish
 
       - name: GitHub Release
         id: create_release
