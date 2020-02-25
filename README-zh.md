@@ -157,3 +157,150 @@ Commands:
 ```text
 1 + 2 = 3
 ```
+
+### 更好的程序结构
+
+如果我们的程序有很多选项/子命令需要组织，放在单一文件里似乎会显得很乱。
+想想像 `cargo` 这样的程序是如何做的，它们在 `commands` 文件夹中为每个子命令准备了单独的文件。
+
+如果我们要引入一个 `sub` 命令，那么程序结构应该像下面这样。
+
+```text
+├── Cargo.lock
+├── Cargo.toml
+├── README.md
+├── src
+│   ├── commands
+│   │   ├── add.rs
+│   │   ├── mod.rs
+│   │   └── sub.rs
+│   └── main.rs
+```
+
+由于子命令和对应的执行函数都应该被移动到 `commands` 中对应的文件里，所以 `main.rs` 会精简许多：
+
+```rust
+//! Just a demo for argh.
+
+use argh::FromArgs;
+
+mod commands;
+
+#[derive(FromArgs)]
+/// A simple calculation tool
+struct DemoCli {
+    #[argh(subcommand)]
+    subcommand: SubCommands,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand)]
+enum SubCommands {
+    Add(commands::add::AddOptions),
+    Sub(commands::sub::SubOptions),
+}
+
+fn main() {
+    let cli: DemoCli = argh::from_env();
+    match cli.subcommand {
+        SubCommands::Add(options) => {
+            commands::add::execute(options);
+        }
+        SubCommands::Sub(options) => {
+            commands::sub::execute(options);
+        }
+    };
+}
+```
+
+那么很显然，`commands/mod.rs` 中应该将 `add` 和 `sub` 模块公开。
+
+```rust
+pub mod add;
+pub mod sub;
+```
+
+由于我们将参数作为整体传入执行函数，所以 `add` 模块也需要对应修改：
+
+```rust
+use argh::FromArgs;
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// Add two numbers
+#[argh(subcommand, name = "add")]
+pub struct AddOptions {
+    /// the first number.
+    #[argh(option)]
+    num1: u16,
+
+    /// the second number
+    #[argh(option)]
+    num2: u16,
+}
+
+pub fn execute(options: AddOptions) {
+    println!(
+        "{} + {} = {}",
+        options.num1,
+        options.num2,
+        options.num1 + options.num2
+    );
+}
+```
+
+接下来，无非就是照猫画虎写一个简单的 `sub` 模块：
+
+```rust
+use argh::FromArgs;
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// Sub two numbers
+#[argh(subcommand, name = "sub")]
+pub struct SubOptions {
+    /// the first number.
+    #[argh(option)]
+    num1: i16,
+
+    /// the second number
+    #[argh(option)]
+    num2: i16,
+}
+
+pub fn execute(options: SubOptions) {
+    println!(
+        "{} - {} = {}",
+        options.num1,
+        options.num2,
+        options.num1 - options.num2
+    );
+}
+```
+
+老规矩，用 `--help` 选项查看用法：
+
+```text
+Usage: target/debug/argh-demo <command> [<args>]
+
+A simple calculation tool
+
+Options:
+  --help            display usage information
+
+Commands:
+  add               Add two numbers
+  sub               Sub two numbers
+```
+
+最后再测试一下功能：
+
+1. `target/debug/argh-demo add --num1 1 --num2 2`：
+
+   ```text
+   1 + 2 = 3
+   ```
+
+2. `target/debug/argh-demo sub --num1 1 --num2 2`：
+
+   ```text
+   1 - 2 = -1
+   ```
