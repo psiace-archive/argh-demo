@@ -11,6 +11,8 @@
 
 这里我将会从用户的角度来讲一下「argh」的使用，就当作自己的一个小「提词板」。
 
+## 命令行参数
+
 首先，我们新建一个项目，很自然地 `cargo new <argh-demo>`。
 
 然后将 argh 添加到我们的依赖项中，像下面这样：
@@ -76,6 +78,81 @@ Options:
 ```
 
 好吧，看来我们不得不加上参数 `target/debug/argh-demo --num1 1 --num2 2`：
+
+```text
+1 + 2 = 3
+```
+
+## 子命令
+
+看起来还不错，但如果我们的目标是一个完整的计算器，通过子命令来选择功能，如 `argh-demo add --num1 1 -- num2 2`，
+这会让我们的设计发生一些变化。
+
+让我们看一下怎么更改代码：
+
+1. 先在 `DemoCli` 中声明一组名为 `subcommand` 的子命令。
+
+   ```rust
+   #[derive(FromArgs)]
+   /// A simple calculation tool
+   struct DemoCli {
+       #[argh(subcommand)]
+       subcommand: SubCommands,
+   }
+   ```
+
+2. 定义包含 `Add` 选项的结构体 `SubCommands`:
+
+   ```rust
+   #[derive(FromArgs, PartialEq, Debug)]
+   #[argh(subcommand)]
+   enum SubCommands {
+       Add(AddOptions),
+   }
+   ```
+
+3. 为 `AddOptions` 添加内容：
+
+   ```rust
+   #[derive(FromArgs, PartialEq, Debug)]
+   /// Add two numbers
+   #[argh(subcommand, name = "add")]
+   pub struct AddOptions {
+       /// the first number.
+       #[argh(option)]
+       num1: u16,
+
+       /// the second number
+       #[argh(option)]
+       num2: u16,
+   }
+   ```
+
+很显然，接下来就只需要在主函数中重写调用部分即可：
+
+```rust
+match cli.subcommand {
+    SubCommands::Add(options) => {
+        add(options.num1, options.num2);
+    }
+};
+```
+
+运行 `cargo build && ./target/debug/argh-demo --help` 看看我们该怎么使用这个改进后的版本。
+
+```text
+Usage: ./target/debug/argh-demo <command> [<args>]
+
+A simple calculation tool
+
+Options:
+  --help            display usage information
+
+Commands:
+  add               Add two numbers
+```
+
+继续用 `1 + 2 = 3` 试试看，`target/debug/argh-demo --num1 1 --num2 2`：
 
 ```text
 1 + 2 = 3

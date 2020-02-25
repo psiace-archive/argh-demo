@@ -11,6 +11,8 @@ I like it for two reasons:
 
 Here I will talk about the use of "argh" from the perspective of the user, as a small "prompt board" for myself.
 
+## Command Line Args
+
 First, let's create a new project. Naturally, `cargo new <argh-demo>`.
 
 Then add argh to our dependencies like this:
@@ -76,6 +78,81 @@ Options:
 ```
 
 Well, it seems we have to add all the options `target/debug/argh-demo --num1 1 --num2 2`：
+
+```text
+1 + 2 = 3
+```
+
+## Subcommands
+
+It looks good, but if our goal is a complete calculator, select functions by subcommands, such as `argh-demo add --num1 1-num2 2`,
+This will make some changes in our design.
+
+Let's see how to change the code:
+
+1. First declare a set of subcommands named `subcommand` in `DemoCli`.
+
+    ```rust
+    #[derive(FromArgs)]
+    /// A simple calculation tool
+    struct DemoCli {
+        #[argh(subcommand)]
+        subcommand: SubCommands,
+    }
+    ```
+
+2. Define the structure `SubCommands` containing the `Add` option:
+
+    ```rust
+    #[derive(FromArgs, PartialEq, Debug)]
+    #[argh(subcommand)]
+    enum SubCommands {
+        Add(AddOptions),
+    }
+    ```
+
+3. Add content for `AddOptions`:
+
+    ```rust
+    #[derive(FromArgs, PartialEq, Debug)]
+    /// Add two numbers
+    #[argh(subcommand, name = "add")]
+    pub struct AddOptions {
+        /// the first number.
+        #[argh(option)]
+        num1: u16,
+
+        /// the second number
+        #[argh(option)]
+        num2: u16,
+    }
+    ```
+
+Obviously, you just need to rewrite the calling part in the main function:
+
+```rust
+match cli.subcommand {
+    SubCommands::Add(options) => {
+        add(options.num1, options.num2);
+    }
+};
+```
+
+Run `cargo build && ./target/debug/argh-demo --help` to see how we can use this improved version.
+
+```text
+Usage: ./target/debug/argh-demo <command> [<args>]
+
+A simple calculation tool
+
+Options:
+  --help            display usage information
+
+Commands:
+  add               Add two numbers
+```
+
+Continue to use `1 + 2 = 3` to try, `target / debug / argh-demo --num1 1 --num2 2`:
 
 ```text
 1 + 2 = 3
